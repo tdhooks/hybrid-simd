@@ -43,7 +43,7 @@ FILE *current_file;
 
 struct image_descriptor *load_pgm(char *filepath);
 void manipulate_pgm(struct image_descriptor *image);
-void output_pgm(struct image_descriptor *image, char *filename);
+void output_pgm(struct image_descriptor *image, char *file);
 
 void teardown(struct image_descriptor *image);
 
@@ -54,11 +54,9 @@ void teardown(struct image_descriptor *image);
 int main(int argc, char **argv)
 {
         if (argc != 3) {
-                printf("Usage: ./hybrid_image <image-file-path> <output-image-name>\n");
+                printf("Usage: ./hybrid_image <image-file-path> <output-image>\n");
                 exit(1);
         }
-
-        struct image_descriptor *image;
 
         int rank, size;
 
@@ -67,22 +65,15 @@ int main(int argc, char **argv)
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-        printf("MPI node initialized for node %d of %d\n", rank + 1, size);
-
         if (rank == COMM_ROOT_RANK) {
-                image = load_pgm(argv[1]);
-        }
-
-        manipulate_pgm(image);
-
-        if (rank == COMM_ROOT_RANK) {
+                struct image_descriptor *image = load_pgm(argv[1]);
+                manipulate_pgm(image);
                 output_pgm(image, argv[2]);
+                teardown(image);
                 printf("Done.\n");
         }
 
         MPI_Finalize();
-
-        teardown(image);
 }
 
 struct image_descriptor *load_pgm(char *filepath)
@@ -153,12 +144,11 @@ void manipulate_pgm(struct image_descriptor *image)
         }
 }
 
-void output_pgm(struct image_descriptor *image, char *filename)
+void output_pgm(struct image_descriptor *image, char *file)
 {
         int i, j;
-        char filepath[1024] = "./output/";
 
-        current_file = fopen(strcat(filepath, filename), "wb");
+        current_file = fopen(file, "wb");
         if (current_file == NULL) {
                 printf("Failed to open image output.\n");
                 exit(1);

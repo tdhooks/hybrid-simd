@@ -1,13 +1,45 @@
-CC=mpicc
-CFLAGS=-Wall -Wextra -fopenmp
+SHELL = /bin/bash
 
-hybrid_simd: hybrid_simd.c
-	$(CC) $(CFLAGS) $< -o $@
+.SUFFIXES:
+.SUFFIXES: .c .h .o
+
+
+SRCDIR = ./src/
+INCDIR = ./inc/
+OBJDIR = ./obj/
+BINDIR = ./bin/
+
+
+_BIN = hybrid_simd
+BIN = $(addprefix $(BINDIR), $(_BIN))
+
+SRC = $(wildcard $(SRCDIR)*.c)
+
+_OBJ = $(patsubst $(SRCDIR)%.c, %.o, $(SRC))
+OBJ = $(addprefix $(OBJDIR), $(_OBJ))
+
+CC = mpicc
+CFLAGS = -fopenmp -O2 -Wall -Wextra -Werror=implicit-function-declaration -pedantic -g -pipe -I$(INCDIR)
+OFLAGS = -fopenmp
+
+
+.PHONY: all
+all: $(BIN)
+
+
+$(BIN): $(OBJ) $(BINDIR)
+	$(CC) $(OFLAGS) $< -o $@
+
+$(BINDIR):
+	mkdir -p $@
+
+$(OBJ): $(SRC) $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR):
+	mkdir -p $@
+
 
 .PHONY: clean
 clean:
-	rm hybrid_simd
-
-.PHONY: clean_output
-clean_output: 
-	rm ./output/*	
+	rm -rf $(BINDIR) $(OBJDIR)
